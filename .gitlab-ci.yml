@@ -1,0 +1,33 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  IMAGE_TAG: registry.gitlab.com/<votre-username>/<votre-projet>/backend:latest
+
+# Job pour build et push l'image Docker
+build-backend:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    # Login au GitLab Container Registry
+    - echo $CI_JOB_TOKEN | docker login -u gitlab-ci-token --password-stdin registry.gitlab.com
+  script:
+    # Construire l'image Docker
+    - docker build -t $IMAGE_TAG .
+    # Pousser l'image sur le registry GitLab
+    - docker push $IMAGE_TAG
+
+# Job de déploiement (optionnel)
+deploy-backend:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+  script:
+    # Se connecter en SSH sur le serveur et lancer le conteneur
+    - ssh user@votre-serveur "docker pull $IMAGE_TAG && docker stop backend || true && docker rm backend || true && docker run -d -p 8080:8080 --name backend $IMAGE_TAG"
+  only:
+    - main  # ne déployer que depuis la branche main
