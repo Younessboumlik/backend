@@ -6,9 +6,9 @@ stages:
 variables:
   IMAGE_TAG: registry.gitlab.com/Younessboumlik/backend:latest
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
-  MYSQL_ROOT_PASSWORD: rootpass
+  MYSQL_ROOT_PASSWORD: pass
   MYSQL_DATABASE: myshopdb
-  MYSQL_USER: root
+  MYSQL_USER: testuser
   MYSQL_PASSWORD: pass
 
 # Cache Maven dependencies
@@ -24,9 +24,9 @@ test-backend:
     - name: mysql:8.1
       alias: db
   variables:
-    MYSQL_ROOT_PASSWORD: rootpass
+    MYSQL_ROOT_PASSWORD: pass
     MYSQL_DATABASE: myshopdb
-    MYSQL_USER: root
+    MYSQL_USER: testuser
     MYSQL_PASSWORD: pass
   before_script:
     # Attendre que MySQL soit prêt
