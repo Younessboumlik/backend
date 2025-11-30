@@ -7,6 +7,7 @@ import com.myshop.domain.enums.UserRole;
 import com.myshop.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -21,7 +22,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(UserController.class)
+@WebMvcTest(controllers = UserController.class, excludeAutoConfiguration = {
+        org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class
+})
+@AutoConfigureMockMvc(addFilters = false)
 class UserControllerTest {
 
     @Autowired
@@ -45,6 +49,8 @@ class UserControllerTest {
                 .id(1L)
                 .fullName("John Doe")
                 .email("john@example.com")
+                .phoneNumber("0600000000")
+                .address("123 Main St")
                 .role(UserRole.CLIENT)
                 .createdAt(Instant.now())
                 .build();
@@ -65,6 +71,8 @@ class UserControllerTest {
                 .id(1L)
                 .fullName("John Doe")
                 .email("john@example.com")
+                .phoneNumber("0600000000")
+                .address("123 Main St")
                 .role(UserRole.CLIENT)
                 .createdAt(Instant.now())
                 .build();
@@ -91,6 +99,8 @@ class UserControllerTest {
                 .id(2L)
                 .fullName("Jane Doe")
                 .email("jane@example.com")
+                .phoneNumber("0611111111")
+                .address("456 Oak Ave")
                 .role(UserRole.ADMIN)
                 .createdAt(Instant.now())
                 .build();

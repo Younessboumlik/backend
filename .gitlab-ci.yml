@@ -28,6 +28,8 @@ test-backend:
     MYSQL_DATABASE: myshopdb
     MYSQL_USER: testuser
     MYSQL_PASSWORD: pass
+    MYSQL_HOST: db
+    MYSQL_PORT: 3306
   before_script:
     # Attendre que MySQL soit prêt
     - apt-get update && apt-get install -y default-mysql-client

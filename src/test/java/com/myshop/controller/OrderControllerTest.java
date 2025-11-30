@@ -10,6 +10,7 @@ import com.myshop.domain.enums.PaymentStatus;
 import com.myshop.service.OrderService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -26,7 +27,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(OrderController.class)
+@WebMvcTest(controllers = OrderController.class, excludeAutoConfiguration = {
+        org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class
+})
+@AutoConfigureMockMvc(addFilters = false)
 class OrderControllerTest {
 
     @Autowired
@@ -53,8 +57,16 @@ class OrderControllerTest {
                 .userId(1L)
                 .totalAmount(new BigDecimal("1999.98"))
                 .orderStatus(OrderStatus.PROCESSING)
+                .paymentMethod(OrderPaymentMethod.CASH_ON_DELIVERY)
                 .paymentStatus(PaymentStatus.PENDING)
+                .shippingName("John Doe")
+                .shippingAddress("123 Main St")
+                .shippingPhone("0600000000")
+                .shippingEmail("john@example.com")
                 .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .items(List.of())
+                .payment(null)
                 .build();
 
         when(orderService.checkout(any(CheckoutRequest.class))).thenReturn(response);
@@ -89,8 +101,18 @@ class OrderControllerTest {
         OrderResponse order1 = OrderResponse.builder()
                 .id(1L)
                 .userId(1L)
+                .totalAmount(new BigDecimal("1999.98"))
                 .orderStatus(OrderStatus.PROCESSING)
+                .paymentMethod(OrderPaymentMethod.CASH_ON_DELIVERY)
+                .paymentStatus(PaymentStatus.PENDING)
+                .shippingName("John Doe")
+                .shippingAddress("123 Main St")
+                .shippingPhone("0600000000")
+                .shippingEmail("john@example.com")
                 .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .items(List.of())
+                .payment(null)
                 .build();
 
         List<OrderResponse> orders = Arrays.asList(order1);

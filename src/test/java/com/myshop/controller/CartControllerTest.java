@@ -6,6 +6,7 @@ import com.myshop.dto.response.CartItemResponse;
 import com.myshop.service.CartService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -21,7 +22,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(CartController.class)
+@WebMvcTest(controllers = CartController.class, excludeAutoConfiguration = {
+        org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class
+})
+@AutoConfigureMockMvc(addFilters = false)
 class CartControllerTest {
 
     @Autowired
@@ -39,8 +43,10 @@ class CartControllerTest {
                 .id(1L)
                 .productId(1L)
                 .productName("Laptop")
+                .imageUrl("https://example.com/laptop.jpg")
                 .quantity(2)
                 .unitPrice(new BigDecimal("999.99"))
+                .lineTotal(new BigDecimal("1999.98"))
                 .build();
 
         List<CartItemResponse> items = Arrays.asList(item1);
@@ -62,8 +68,10 @@ class CartControllerTest {
                 .id(1L)
                 .productId(1L)
                 .productName("Laptop")
+                .imageUrl("https://example.com/laptop.jpg")
                 .quantity(2)
                 .unitPrice(new BigDecimal("999.99"))
+                .lineTotal(new BigDecimal("1999.98"))
                 .build();
 
         when(cartService.addItem(eq(1L), any(CartItemRequest.class))).thenReturn(response);
@@ -85,7 +93,11 @@ class CartControllerTest {
         CartItemResponse response = CartItemResponse.builder()
                 .id(1L)
                 .productId(1L)
+                .productName("Laptop")
+                .imageUrl("https://example.com/laptop.jpg")
                 .quantity(3)
+                .unitPrice(new BigDecimal("999.99"))
+                .lineTotal(new BigDecimal("2999.97"))
                 .build();
 
         when(cartService.updateItem(eq(1L), eq(1L), any(CartItemRequest.class))).thenReturn(response);
