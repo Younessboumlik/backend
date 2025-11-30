@@ -30,6 +30,7 @@ test-backend:
     MYSQL_PASSWORD: pass
   before_script:
     # Attendre que MySQL soit prêt
+    - apt-get update && apt-get install -y default-mysql-client
     - until mysqladmin ping -h db -u $MYSQL_USER -p$MYSQL_PASSWORD --silent; do echo "Waiting for MySQL..."; sleep 2; done
   script:
     - mvn clean test
