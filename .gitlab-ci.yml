@@ -4,7 +4,7 @@ stages:
   - deploy
 
 variables:
-  IMAGE_TAG: registry.gitlab.com/Younessboumlik/backend:latest
+  IMAGE_TAG: registry.gitlab.com/younessboumlik/backend:latest
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
   MYSQL_ROOT_PASSWORD: pass
   MYSQL_DATABASE: myshopdb
