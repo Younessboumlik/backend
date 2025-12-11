@@ -16,16 +16,7 @@ cache:
     - target/
 
 # ============================================
-# TES JOBS EXISTANTS - ON NE TOUCHE PAS ! ❌
-# ============================================
-# test-backend:
-#   ... ton code existant ...
-#
-# build-backend:
-#   ... ton code existant ...
-
-# ============================================
-# NOUVEAU JOB SELENIUM (STAGE SÉPARÉ) ✅
+# NOUVEAU JOB SELENIUM SEULEMENT ✅
 # ============================================
 selenium-tests:
   stage: e2e-test
@@ -43,49 +34,48 @@ selenium-tests:
     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/myshopdb_test
     SPRING_DATASOURCE_USERNAME: testuser
     SPRING_DATASOURCE_PASSWORD: testpassword
-    # Variables Selenium
     SELENIUM_REMOTE_URL: http://selenium:4444/wd/hub
-    APP_URL: http://localhost:5173
+    APP_URL: http://localhost:8080
     CI: "true"
   before_script:
-    # Installer les dépendances système
-    - apt-get update
-    - apt-get install -y default-mysql-client curl wget
-    # Attendre MySQL
+    - echo "Installing dependencies..."
+    - apt-get update && apt-get install -y default-mysql-client curl
+    - echo "Waiting for MySQL..."
     - |
       until mysqladmin ping -h mysql -u testuser -ptestpassword --silent; do
-        echo "Waiting for MySQL..."
+        echo "MySQL not ready, waiting..."
         sleep 2
       done
-    # Démarrer l'application en arrière-plan
+    - echo "MySQL is ready!"
     - echo "Starting Spring Boot application..."
-    - mvn $MAVEN_CLI_OPTS spring-boot:run -Dspring.profiles.active=test &
+    - nohup mvn spring-boot:run -Dspring.profiles.active=test > app.log 2>&1 &
     - APP_PID=$!
-    # Attendre que l'application démarre
+    - echo "Application PID: $APP_PID"
+    - echo "Waiting for application to start..."
     - |
-      echo "Waiting for application to start..."
       for i in {1..60}; do
         if curl -s http://localhost:8080/actuator/health > /dev/null 2>&1; then
-          echo "Application is ready!"
+          echo "✅ Application is ready!"
           break
         fi
-        echo "Attempt $i/60: Application not ready yet..."
-        sleep 2
+        echo "Attempt $i/60: Application not ready..."
+        sleep 3
       done
-    # Vérifier que Selenium est prêt
+    - echo "Checking Selenium Grid..."
     - |
-      echo "Checking Selenium Grid..."
       until curl -s http://selenium:4444/wd/hub/status > /dev/null 2>&1; do
-        echo "Waiting for Selenium Grid..."
+        echo "Selenium not ready, waiting..."
         sleep 2
       done
+    - echo "✅ Selenium Grid is ready!"
   script:
     - echo "Running Selenium E2E tests..."
-    # Exécuter uniquement les tests Selenium
-    - mvn $MAVEN_CLI_OPTS test -Dtest=*Selenium*,AjoutTest -Dspring.profiles.active=test
+    - mvn test -Dtest=TestProjectTest -Dspring.profiles.active=test
   after_script:
-    # Arrêter l'application
+    - echo "Stopping application..."
     - kill $APP_PID 2>/dev/null || true
+    - echo "Application logs:"
+    - cat app.log || true
   artifacts:
     when: always
     reports:
@@ -94,10 +84,9 @@ selenium-tests:
     paths:
       - target/surefire-reports/
       - target/screenshots/
+      - app.log
     expire_in: 1 week
   allow_failure: true
   only:
     - main
     - develop
-  # Ce job s'exécute APRÈS tes tests existants
-  needs: []  # Pas de dépendances, lance en parallèle ou après
