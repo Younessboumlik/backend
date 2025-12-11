@@ -16,7 +16,7 @@ cache:
     - target/
 
 # ============================================
-# NOUVEAU JOB SELENIUM SEULEMENT ✅
+# NOUVEAU JOB SELENIUM ✅
 # ============================================
 selenium-tests:
   stage: e2e-test
@@ -41,33 +41,17 @@ selenium-tests:
     - echo "Installing dependencies..."
     - apt-get update && apt-get install -y default-mysql-client curl
     - echo "Waiting for MySQL..."
-    - |
-      until mysqladmin ping -h mysql -u testuser -ptestpassword --silent; do
-        echo "MySQL not ready, waiting..."
-        sleep 2
-      done
+    - until mysqladmin ping -h mysql -u testuser -ptestpassword --silent; do echo "MySQL not ready..."; sleep 2; done
     - echo "MySQL is ready!"
     - echo "Starting Spring Boot application..."
     - nohup mvn spring-boot:run -Dspring.profiles.active=test > app.log 2>&1 &
     - APP_PID=$!
-    - echo "Application PID: $APP_PID"
+    - echo "Application PID is $APP_PID"
     - echo "Waiting for application to start..."
-    - |
-      for i in {1..60}; do
-        if curl -s http://localhost:8080/actuator/health > /dev/null 2>&1; then
-          echo "✅ Application is ready!"
-          break
-        fi
-        echo "Attempt $i/60: Application not ready..."
-        sleep 3
-      done
+    - for i in {1..60}; do if curl -s http://localhost:8080/actuator/health > /dev/null 2>&1; then echo "Application ready!"; break; fi; echo "Attempt $i/60..."; sleep 3; done
     - echo "Checking Selenium Grid..."
-    - |
-      until curl -s http://selenium:4444/wd/hub/status > /dev/null 2>&1; do
-        echo "Selenium not ready, waiting..."
-        sleep 2
-      done
-    - echo "✅ Selenium Grid is ready!"
+    - until curl -s http://selenium:4444/wd/hub/status > /dev/null 2>&1; do echo "Selenium not ready..."; sleep 2; done
+    - echo "Selenium Grid is ready!"
   script:
     - echo "Running Selenium E2E tests..."
     - mvn test -Dtest=TestProjectTest -Dspring.profiles.active=test
