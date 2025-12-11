@@ -1,7 +1,7 @@
 stages:
   - test
-  - build
   - e2e-test
+  - build
   - deploy
 
 variables:
@@ -16,7 +16,45 @@ cache:
     - target/
 
 # ============================================
-# NOUVEAU JOB SELENIUM ✅
+# STAGE 1: TESTS UNITAIRES
+# ============================================
+test-backend:
+  stage: test
+  image: maven:3.9-eclipse-temurin-17
+  services:
+    - name: mysql:8.0
+      alias: mysql
+  variables:
+    MYSQL_ROOT_PASSWORD: rootpassword
+    MYSQL_DATABASE: myshopdb_test
+    MYSQL_USER: testuser
+    MYSQL_PASSWORD: testpassword
+    SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/myshopdb_test
+    SPRING_DATASOURCE_USERNAME: testuser
+    SPRING_DATASOURCE_PASSWORD: testpassword
+  script:
+    - echo "Running unit tests..."
+    - cd backend
+    # Attendre que MySQL soit prêt
+    - |
+      apt-get update && apt-get install -y default-mysql-client
+      until mysqladmin ping -h mysql -u testuser -ptestpassword --silent; do
+        echo "Waiting for MySQL..."
+        sleep 2
+      done
+    # Exécuter uniquement les tests unitaires (exclure Selenium)
+    - mvn $MAVEN_CLI_OPTS test -Dtest=!*Selenium*,!AjoutTest -Dspring.profiles.active=test
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - backend/target/surefire-reports/TEST-*.xml
+    paths:
+      - backend/target/surefire-reports/
+    expire_in: 1 week
+
+# ============================================
+# STAGE 2: TESTS E2E SELENIUM
 # ============================================
 selenium-tests:
   stage: e2e-test
@@ -38,39 +76,81 @@ selenium-tests:
     APP_URL: http://localhost:8080
     CI: "true"
   before_script:
-    - echo "Installing dependencies..."
-    - apt-get update && apt-get install -y default-mysql-client curl
-    - echo "Waiting for MySQL..."
-    - until mysqladmin ping -h mysql -u testuser -ptestpassword --silent; do echo "MySQL not ready..."; sleep 2; done
-    - echo "MySQL is ready!"
+    - cd backend
+    - apt-get update
+    - apt-get install -y default-mysql-client curl wget gnupg
+    - until mysqladmin ping -h mysql -u testuser -ptestpassword --silent; do echo "Waiting for MySQL..."; sleep 2; done
     - echo "Starting Spring Boot application..."
-    - nohup mvn spring-boot:run -Dspring.profiles.active=test > app.log 2>&1 &
+    - nohup mvn $MAVEN_CLI_OPTS spring-boot:run -Dspring.profiles.active=test > app.log 2>&1 &
     - APP_PID=$!
-    - echo "Application PID is $APP_PID"
     - echo "Waiting for application to start..."
-    - for i in {1..60}; do if curl -s http://localhost:8080/actuator/health > /dev/null 2>&1; then echo "Application ready!"; break; fi; echo "Attempt $i/60..."; sleep 3; done
+    - for i in {1..60}; do if curl -s http://localhost:8080/actuator/health > /dev/null 2>&1; then echo "Application is ready!"; break; fi; echo "Attempt $i/60: Application not ready yet..."; sleep 2; done
     - echo "Checking Selenium Grid..."
-    - until curl -s http://selenium:4444/wd/hub/status > /dev/null 2>&1; do echo "Selenium not ready..."; sleep 2; done
-    - echo "Selenium Grid is ready!"
+    - until curl -s http://selenium:4444/wd/hub/status > /dev/null 2>&1; do echo "Waiting for Selenium Grid..."; sleep 2; done
   script:
     - echo "Running Selenium E2E tests..."
-    - mvn test -Dtest=TestProjectTest -Dspring.profiles.active=test
+    - mvn $MAVEN_CLI_OPTS test -Dtest=*Selenium*,AjoutTest -Dspring.profiles.active=test
   after_script:
-    - echo "Stopping application..."
     - kill $APP_PID 2>/dev/null || true
-    - echo "Application logs:"
-    - cat app.log || true
   artifacts:
     when: always
     reports:
       junit:
-        - target/surefire-reports/TEST-*.xml
+        - backend/target/surefire-reports/TEST-*.xml
     paths:
-      - target/surefire-reports/
-      - target/screenshots/
-      - app.log
+      - backend/target/surefire-reports/
+      - backend/target/screenshots/
     expire_in: 1 week
   allow_failure: true
+  needs: ["test-backend"]
+
+# ============================================
+# STAGE 3: BUILD DOCKER
+# ============================================
+build-backend:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - cd backend
+    - docker build -t $CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA .
+    - docker build -t $CI_REGISTRY_IMAGE/backend:latest .
+    - docker push $CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_REGISTRY_IMAGE/backend:latest
+  needs: ["test-backend", "selenium-tests"]
   only:
     - main
     - develop
+
+# ============================================
+# STAGE 4: DEPLOY
+# ============================================
+deploy-staging:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan $DEPLOY_SERVER >> ~/.ssh/known_hosts
+  script:
+    - echo "Deploying to staging server..."
+    - |
+      ssh $DEPLOY_USER@$DEPLOY_SERVER << EOF
+        cd /opt/myshop
+        docker-compose pull
+        docker-compose up -d
+        docker system prune -f
+      EOF
+  environment:
+    name: staging
+    url: https://staging.myshop.com
+  needs: ["build-backend"]
+  when: manual
+  only:
+    - main
