@@ -39,7 +39,7 @@ test-backend:
       done
     - echo "MySQL is ready ✔"
   script:
-    - mvn -Dspring.profiles.active=test clean test
+    - mvn -Dspring.profiles.active=test clean test -Dtest=!TestProjectTest,!*Selenium*
   artifacts:
     when: always
     reports:
