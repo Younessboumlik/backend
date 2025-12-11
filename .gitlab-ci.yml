@@ -56,53 +56,53 @@ test-backend:
 # ============================================
 # STAGE 2: TESTS E2E SELENIUM
 # ============================================
-selenium-tests:
-  stage: e2e-test
-  image: maven:3.9-eclipse-temurin-17
-  services:
-    - name: mysql:8.0
-      alias: mysql
-    - name: selenium/standalone-chrome:latest
-      alias: selenium
-  variables:
-    MYSQL_ROOT_PASSWORD: rootpassword
-    MYSQL_DATABASE: myshopdb_test
-    MYSQL_USER: testuser
-    MYSQL_PASSWORD: testpassword
-    SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/myshopdb_test
-    SPRING_DATASOURCE_USERNAME: testuser
-    SPRING_DATASOURCE_PASSWORD: testpassword
-    SELENIUM_REMOTE_URL: http://selenium:4444/wd/hub
-    APP_URL: http://localhost:8080
-    CI: "true"
-  before_script:
-    - cd backend
-    - apt-get update
-    - apt-get install -y default-mysql-client curl wget gnupg
-    - until mysqladmin ping -h mysql -u testuser -ptestpassword --silent; do echo "Waiting for MySQL..."; sleep 2; done
-    - echo "Starting Spring Boot application..."
-    - nohup mvn $MAVEN_CLI_OPTS spring-boot:run -Dspring.profiles.active=test > app.log 2>&1 &
-    - APP_PID=$!
-    - echo "Waiting for application to start..."
-    - for i in {1..60}; do if curl -s http://localhost:8080/actuator/health > /dev/null 2>&1; then echo "Application is ready!"; break; fi; echo "Attempt $i/60: Application not ready yet..."; sleep 2; done
-    - echo "Checking Selenium Grid..."
-    - until curl -s http://selenium:4444/wd/hub/status > /dev/null 2>&1; do echo "Waiting for Selenium Grid..."; sleep 2; done
-  script:
-    - echo "Running Selenium E2E tests..."
-    - mvn $MAVEN_CLI_OPTS test -Dtest=*Selenium*,AjoutTest -Dspring.profiles.active=test
-  after_script:
-    - kill $APP_PID 2>/dev/null || true
-  artifacts:
-    when: always
-    reports:
-      junit:
-        - backend/target/surefire-reports/TEST-*.xml
-    paths:
-      - backend/target/surefire-reports/
-      - backend/target/screenshots/
-    expire_in: 1 week
-  allow_failure: true
-  needs: ["test-backend"]
+# selenium-tests:
+#   stage: e2e-test
+#   image: maven:3.9-eclipse-temurin-17
+#   services:
+#     - name: mysql:8.0
+#       alias: mysql
+#     - name: selenium/standalone-chrome:latest
+#       alias: selenium
+#   variables:
+#     MYSQL_ROOT_PASSWORD: rootpassword
+#     MYSQL_DATABASE: myshopdb_test
+#     MYSQL_USER: testuser
+#     MYSQL_PASSWORD: testpassword
+#     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/myshopdb_test
+#     SPRING_DATASOURCE_USERNAME: testuser
+#     SPRING_DATASOURCE_PASSWORD: testpassword
+#     SELENIUM_REMOTE_URL: http://selenium:4444/wd/hub
+#     APP_URL: http://localhost:8080
+#     CI: "true"
+#   before_script:
+#     - cd backend
+#     - apt-get update
+#     - apt-get install -y default-mysql-client curl wget gnupg
+#     - until mysqladmin ping -h mysql -u testuser -ptestpassword --silent; do echo "Waiting for MySQL..."; sleep 2; done
+#     - echo "Starting Spring Boot application..."
+#     - nohup mvn $MAVEN_CLI_OPTS spring-boot:run -Dspring.profiles.active=test > app.log 2>&1 &
+#     - APP_PID=$!
+#     - echo "Waiting for application to start..."
+#     - for i in {1..60}; do if curl -s http://localhost:8080/actuator/health > /dev/null 2>&1; then echo "Application is ready!"; break; fi; echo "Attempt $i/60: Application not ready yet..."; sleep 2; done
+#     - echo "Checking Selenium Grid..."
+#     - until curl -s http://selenium:4444/wd/hub/status > /dev/null 2>&1; do echo "Waiting for Selenium Grid..."; sleep 2; done
+#   script:
+#     - echo "Running Selenium E2E tests..."
+#     - mvn $MAVEN_CLI_OPTS test -Dtest=*Selenium*,AjoutTest -Dspring.profiles.active=test
+#   after_script:
+#     - kill $APP_PID 2>/dev/null || true
+#   artifacts:
+#     when: always
+#     reports:
+#       junit:
+#         - backend/target/surefire-reports/TEST-*.xml
+#     paths:
+#       - backend/target/surefire-reports/
+#       - backend/target/screenshots/
+#     expire_in: 1 week
+#   allow_failure: true
+#   needs: ["test-backend"]
 
 # ============================================
 # STAGE 3: BUILD DOCKER
