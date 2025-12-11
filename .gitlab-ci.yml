@@ -17,7 +17,7 @@ cache:
     - .m2/repository/
 
 # ============================================
-# TON JOB TEST ORIGINAL - INCHANGÉ ✅
+# TESTS UNITAIRES (SANS SELENIUM) ✅
 # ============================================
 test-backend:
   stage: test
@@ -54,7 +54,7 @@ test-backend:
     - develop
 
 # ============================================
-# TON JOB BUILD ORIGINAL - INCHANGÉ ✅
+# BUILD DOCKER ✅
 # ============================================
 build-backend:
   stage: build
@@ -73,7 +73,7 @@ build-backend:
     - test-backend
 
 # ============================================
-# NOUVEAU JOB SELENIUM ✅
+# TESTS SELENIUM E2E ✅
 # ============================================
 selenium-tests:
   stage: e2e-test
@@ -124,7 +124,7 @@ selenium-tests:
     - develop
 
 # ============================================
-# TON JOB DEPLOY ORIGINAL - INCHANGÉ ✅
+# DEPLOY ✅
 # ============================================
 deploy-backend:
   stage: deploy
