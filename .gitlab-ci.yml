@@ -1,7 +1,6 @@
 stages:
   - test
   - build
-  - e2e-test
   - deploy
 
 variables:
@@ -16,9 +15,6 @@ cache:
   paths:
     - .m2/repository/
 
-# ============================================
-# TESTS UNITAIRES (SANS SELENIUM) ✅
-# ============================================
 test-backend:
   stage: test
   image: maven:3.9.3-eclipse-temurin-17
@@ -39,7 +35,7 @@ test-backend:
       done
     - echo "MySQL is ready ✔"
   script:
-    - mvn -Dspring.profiles.active=test clean test -Dtest=!TestProjectTest,!*Selenium*
+    - mvn -Dspring.profiles.active=test clean test
   artifacts:
     when: always
     reports:
@@ -53,9 +49,6 @@ test-backend:
     - main
     - develop
 
-# ============================================
-# BUILD DOCKER ✅
-# ============================================
 build-backend:
   stage: build
   image: docker:latest
@@ -72,60 +65,6 @@ build-backend:
   dependencies:
     - test-backend
 
-# ============================================
-# TESTS SELENIUM E2E ✅
-# ============================================
-selenium-tests:
-  stage: e2e-test
-  image: maven:3.9.3-eclipse-temurin-17
-  services:
-    - name: mysql:8.1
-      alias: db
-    - name: selenium/standalone-chrome:latest
-      alias: selenium
-  variables:
-    MYSQL_HOST: db
-    MYSQL_PORT: 3306
-    SELENIUM_REMOTE_URL: http://selenium:4444/wd/hub
-    APP_URL: http://localhost:8080
-    CI: "true"
-  before_script:
-    - apt-get update && apt-get install -y default-mysql-client curl
-    - echo "⏳ Waiting for MySQL..."
-    - until mysqladmin ping -h db -u$MYSQL_USER -p$MYSQL_PASSWORD --silent; do echo "MySQL not ready yet..."; sleep 2; done
-    - echo "MySQL is ready ✔"
-    - echo "Starting Spring Boot application..."
-    - nohup mvn spring-boot:run -Dspring.profiles.active=test > app.log 2>&1 &
-    - APP_PID=$!
-    - echo "⏳ Waiting for application to start..."
-    - for i in {1..60}; do if curl -s http://localhost:8080/actuator/health > /dev/null 2>&1; then echo "Application is ready ✔"; break; fi; echo "Attempt $i/60..."; sleep 3; done
-    - echo "⏳ Checking Selenium Grid..."
-    - until curl -s http://selenium:4444/wd/hub/status > /dev/null 2>&1; do echo "Selenium not ready..."; sleep 2; done
-    - echo "Selenium Grid is ready ✔"
-  script:
-    - echo "Running Selenium E2E tests..."
-    - mvn test -Dtest=TestProjectTest -Dspring.profiles.active=test
-  after_script:
-    - kill $APP_PID 2>/dev/null || true
-    - cat app.log || true
-  artifacts:
-    when: always
-    reports:
-      junit:
-        - target/surefire-reports/TEST-*.xml
-    paths:
-      - target/surefire-reports/
-      - target/screenshots/
-      - app.log
-    expire_in: 1 week
-  allow_failure: true
-  only:
-    - main
-    - develop
-
-# ============================================
-# DEPLOY ✅
-# ============================================
 deploy-backend:
   stage: deploy
   image: alpine:latest
