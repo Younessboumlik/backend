@@ -4,19 +4,17 @@ stages:
   - deploy
 
 variables:
-  IMAGE_TAG: registry.gitlab.com/Younessboumlik/backend:latest
+  IMAGE_TAG: registry.gitlab.com/younessboumlik/backend:latest
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
   MYSQL_ROOT_PASSWORD: pass
   MYSQL_DATABASE: myshopdb
   MYSQL_USER: testuser
   MYSQL_PASSWORD: pass
 
-# Cache Maven dependencies
 cache:
   paths:
     - .m2/repository/
 
-# Job pour exécuter les tests
 test-backend:
   stage: test
   image: maven:3.9.3-eclipse-temurin-17
@@ -24,18 +22,20 @@ test-backend:
     - name: mysql:8.1
       alias: db
   variables:
-    MYSQL_ROOT_PASSWORD: pass
-    MYSQL_DATABASE: myshopdb
-    MYSQL_USER: testuser
-    MYSQL_PASSWORD: pass
     MYSQL_HOST: db
     MYSQL_PORT: 3306
   before_script:
-    # Attendre que MySQL soit prêt
     - apt-get update && apt-get install -y default-mysql-client
-    - until mysqladmin ping -h db -u $MYSQL_USER -p$MYSQL_PASSWORD --silent; do echo "Waiting for MySQL..."; sleep 2; done
+    - echo "⏳ Waiting for MySQL..."
+    - >
+      until mysqladmin ping -h db -u$MYSQL_USER -p$MYSQL_PASSWORD --silent;
+      do
+        echo "MySQL not ready yet...";
+        sleep 2;
+      done
+    - echo "MySQL is ready ✔"
   script:
-    - mvn clean test
+    - mvn -Dspring.profiles.active=test clean test
   artifacts:
     when: always
     reports:
@@ -49,7 +49,6 @@ test-backend:
     - main
     - develop
 
-# Job pour build et push l'image Docker
 build-backend:
   stage: build
   image: docker:latest
@@ -66,7 +65,6 @@ build-backend:
   dependencies:
     - test-backend
 
-# Job de déploiement
 deploy-backend:
   stage: deploy
   image: alpine:latest
