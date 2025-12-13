@@ -154,6 +154,17 @@ public class OrderServiceImpl implements OrderService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivered orders cannot revert to previous status");
         }
 
+        // --- DEBUT MODIFICATION : Remise en stock si Annulation ---
+        if (request.getOrderStatus() == OrderStatus.CANCELLED && order.getOrderStatus() != OrderStatus.CANCELLED) {
+            for (OrderItem item : order.getOrderItems()) {
+                Product product = item.getProduct();
+                int newStock = product.getStockQuantity() + item.getQuantity();
+                product.setStockQuantity(newStock);
+                productRepository.save(product);
+            }
+        }
+        // --- FIN MODIFICATION ---
+
         order.setOrderStatus(request.getOrderStatus());
 
         if (request.getPaymentStatus() != null) {
@@ -169,4 +180,3 @@ public class OrderServiceImpl implements OrderService {
         return DtoMapper.toOrderResponse(saved, saved.getOrderItems());
     }
 }
-

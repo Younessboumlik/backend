@@ -11,8 +11,8 @@ public class ReviewResponse {
     Long id;
     Long productId;
     Long userId;
+    String userName; // <--- AJOUTE CETTE LIGNE
     Integer rating;
     String comment;
     Instant createdAt;
 }
-

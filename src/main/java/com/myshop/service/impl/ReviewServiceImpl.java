@@ -46,6 +46,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .id(saved.getId())
                 .productId(product.getId())
                 .userId(user.getId())
+                .userName(user.getFullName()) // <--- AJOUTE CECI
                 .rating(saved.getRating())
                 .comment(saved.getComment())
                 .createdAt(saved.getCreatedAt())
@@ -60,6 +61,7 @@ public class ReviewServiceImpl implements ReviewService {
                         .id(review.getId())
                         .productId(review.getProduct().getId())
                         .userId(review.getUser().getId())
+                        .userName(review.getUser().getFullName()) // <--- AJOUTE CECI
                         .rating(review.getRating())
                         .comment(review.getComment())
                         .createdAt(review.getCreatedAt())
@@ -75,4 +77,3 @@ public class ReviewServiceImpl implements ReviewService {
         reviewRepository.delete(review);
     }
 }
-
