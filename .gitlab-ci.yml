@@ -4,38 +4,34 @@ stages:
   - deploy
 
 variables:
-  IMAGE_TAG: registry.gitlab.com/younessboumlik/backend:latest
+  IMAGE_TAG: registry.gitlab.com/Younessboumlik/backend:latest
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
   MYSQL_ROOT_PASSWORD: pass
   MYSQL_DATABASE: myshopdb
   MYSQL_USER: testuser
   MYSQL_PASSWORD: pass
+  MYSQL_HOST: db
+  MYSQL_PORT: 3306
 
 cache:
   paths:
     - .m2/repository/
 
+# ----------------------------
+# Test Backend
+# ----------------------------
 test-backend:
   stage: test
   image: maven:3.9.3-eclipse-temurin-17
   services:
     - name: mysql:8.1
       alias: db
-  variables:
-    MYSQL_HOST: db
-    MYSQL_PORT: 3306
   before_script:
     - apt-get update && apt-get install -y default-mysql-client
-    - echo "⏳ Waiting for MySQL..."
-    - >
-      until mysqladmin ping -h db -u$MYSQL_USER -p$MYSQL_PASSWORD --silent;
-      do
-        echo "MySQL not ready yet...";
-        sleep 2;
-      done
-    - echo "MySQL is ready ✔"
+    # Attendre que MySQL soit prêt
+    - until mysqladmin ping -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD --silent; do echo "Waiting for MySQL..."; sleep 2; done
   script:
-    - mvn -Dspring.profiles.active=test clean test
+    - mvn clean test
   artifacts:
     when: always
     reports:
@@ -49,6 +45,9 @@ test-backend:
     - main
     - develop
 
+# ----------------------------
+# Build Backend Docker Image
+# ----------------------------
 build-backend:
   stage: build
   image: docker:latest
@@ -65,12 +64,20 @@ build-backend:
   dependencies:
     - test-backend
 
+# ----------------------------
+# Deploy Backend
+# ----------------------------
 deploy-backend:
   stage: deploy
   image: alpine:latest
   before_script:
     - apk add --no-cache openssh-client
   script:
-    - ssh user@votre-serveur "docker pull $IMAGE_TAG && docker stop backend || true && docker rm backend || true && docker run -d -p 8080:8080 --name backend $IMAGE_TAG"
+    - ssh user@votre-serveur "
+      docker pull $IMAGE_TAG &&
+      docker stop backend || true &&
+      docker rm backend || true &&
+      docker run -d -p 8080:8080 --name backend $IMAGE_TAG
+      "
   only:
     - main
