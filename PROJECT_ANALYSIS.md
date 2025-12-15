@@ -156,9 +156,9 @@ The project follows a **clean, layered architecture** pattern typical of Spring 
 ### Testing
 - **Spring Boot Starter Test** - Testing framework
 - **Spring Security Test** - Security testing utilities
-- **Selenium 4.16.1** - Browser automation testing
-- **JUnit** - Unit testing (included in spring-boot-starter-test)
+- **JUnit 5** - Unit testing (included in spring-boot-starter-test)
 - **Mockito** - Mocking framework (included in spring-boot-starter-test)
+- **Selenium 4.16.1** - Browser automation (dependency available, not actively used)
 
 ### Build & DevOps
 - **Maven 3.9.3** - Build tool
@@ -315,12 +315,13 @@ The project follows a **clean, layered architecture** pattern typical of Spring 
 ┌──────────┐         ┌──────────┐         ┌──────────┐
 │  Order   │1───────*│OrderItem │*───────1│ Category │
 └──────────┘         └──────────┘         └──────────┘
-     │1                    
-     │                     
-     │1                    ┌──────────┐
-┌──────────┐              │  Review  │
-│ Payment  │              └──────────┘
-└──────────┘                   │*
+     │1
+     │
+     │1
+┌──────────┐              ┌──────────┐
+│ Payment  │              │  Review  │
+└──────────┘              └──────────┘
+                               │*
                                │
                               1│
                          (Product)
@@ -849,7 +850,7 @@ The codebase is maintainable, testable, and ready for production deployment with
 
 ---
 
-**Generated:** December 2024  
+**Generated:** December 15, 2024  
 **Project Version:** 0.0.1-SNAPSHOT  
 **Framework:** Spring Boot 3.4.1  
 **Java Version:** 17
