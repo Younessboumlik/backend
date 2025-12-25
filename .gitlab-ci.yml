@@ -42,14 +42,14 @@ test-backend:
     MYSQL_PORT: 3306
   before_script:
     - apt-get update && apt-get install -y default-mysql-client
-    - echo " Waiting for MySQL..."
+    - echo "Waiting for MySQL..."
     - >
-      until mysqladmin ping -h db -u$MYSQL_USER -p$MYSQL_PASSWORD --silent;
-      do
-        echo "MySQL not ready yet...";
-        sleep 2;
-      done
-    - echo "MySQL is ready ✔"
+     until mysqladmin ping -h db -uroot -p$MYSQL_ROOT_PASSWORD --silent;
+     do
+      echo "MySQL not ready yet...";
+      sleep 2;
+     done
+    - echo "MySQL ready ✔"
   script:
     - mvn -Dspring.profiles.active=test clean test
   artifacts:
