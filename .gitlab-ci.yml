@@ -38,34 +38,33 @@ test-backend:
     - name: mysql:8.1
       alias: db
   variables:
-    MYSQL_ROOT_PASSWORD: pass
-    MYSQL_DATABASE: myshopdb
-    MYSQL_USER: testuser
-    MYSQL_PASSWORD: pass
     MYSQL_HOST: db
     MYSQL_PORT: 3306
   before_script:
     - apt-get update && apt-get install -y default-mysql-client
-    - echo "Waiting for MySQL..."
+    - echo " Waiting for MySQL..."
     - >
       until mysqladmin ping -h db -u$MYSQL_USER -p$MYSQL_PASSWORD --silent;
       do
-        echo "MySQL not ready...";
+        echo "MySQL not ready yet...";
         sleep 2;
       done
-    - echo "MySQL ready ✔"
+    - echo "MySQL is ready ✔"
   script:
-    - mvn test
-  dependencies:
-    - build-backend
+    - mvn -Dspring.profiles.active=test clean test
   artifacts:
+    when: always
     reports:
       junit:
         - target/surefire-reports/TEST-*.xml
+    paths:
+      - target/surefire-reports/
+    expire_in: 1 week
   only:
+    - merge_requests
     - main
     - develop
-    - merge_requests
+
 
 # =====================
 # DEPLOY = DOCKER
