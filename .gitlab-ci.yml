@@ -1,6 +1,6 @@
 stages:
-  - test
   - build
+  - test
   - deploy
 
 variables:
@@ -19,7 +19,24 @@ cache:
     - .m2/repository/
 
 # =====================
-# TEST = TESTS BACKEND
+# BUILD = COMPILATION
+# =====================
+build-backend:
+  stage: build
+  image: maven:3.9.3-eclipse-temurin-17
+  script:
+    - mvn clean package -DskipTests
+  artifacts:
+    paths:
+      - target/*.jar
+    expire_in: 1 week
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# =====================
+# TEST = (INCHANGÉ)
 # =====================
 test-backend:
   stage: test
@@ -27,13 +44,17 @@ test-backend:
   services:
     - name: mysql:8.1
       alias: db
+  variables:
+    MYSQL_HOST: db
+    MYSQL_PORT: 3306
   before_script:
     - apt-get update && apt-get install -y default-mysql-client
-    - echo "Waiting for MySQL..."
-    - |
-      until mysqladmin ping -h"$MYSQL_HOST" -uroot -p"$MYSQL_ROOT_PASSWORD" --silent; do
-        echo "MySQL not ready yet..."
-        sleep 2
+    - echo " Waiting for MySQL..."
+    - >
+      until mysqladmin ping -h db -u$MYSQL_USER -p$MYSQL_PASSWORD --silent;
+      do
+        echo "MySQL not ready yet...";
+        sleep 2;
       done
     - echo "MySQL is ready ✔"
   script:
@@ -46,16 +67,18 @@ test-backend:
     paths:
       - target/surefire-reports/
     expire_in: 1 week
+  dependencies:
+    - build-backend
   only:
     - main
     - develop
     - merge_requests
 
 # =====================
-# BUILD = IMAGE + PUSH
+# DEPLOY = DOCKER IMAGE
 # =====================
-build-backend:
-  stage: build
+deploy-backend:
+  stage: deploy
   image: docker:latest
   services:
     - docker:dind
@@ -66,24 +89,5 @@ build-backend:
     - docker push $IMAGE_TAG
   dependencies:
     - test-backend
-  only:
-    - main
-    - develop
-
-# =====================
-# DEPLOY = PROD
-# =====================
-deploy-backend:
-  stage: deploy
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache openssh-client
-  script:
-    - ssh user@votre-serveur "
-        docker pull $IMAGE_TAG &&
-        docker stop backend || true &&
-        docker rm backend || true &&
-        docker run -d -p 8080:8080 --name backend $IMAGE_TAG
-      "
   only:
     - main
