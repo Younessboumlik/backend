@@ -1,20 +1,36 @@
 stages:
-  - test
   - build
+  - test
   - deploy
 
 variables:
   IMAGE_TAG: registry.gitlab.com/younessboumlik/backend:latest
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
-  MYSQL_ROOT_PASSWORD: pass
-  MYSQL_DATABASE: myshopdb
-  MYSQL_USER: testuser
-  MYSQL_PASSWORD: pass
 
 cache:
   paths:
     - .m2/repository/
 
+# =====================
+# BUILD = COMPILATION
+# =====================
+build-backend:
+  stage: build
+  image: maven:3.9.3-eclipse-temurin-17
+  script:
+    - mvn clean package -DskipTests
+  artifacts:
+    paths:
+      - target/*.jar
+    expire_in: 1 week
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# =====================
+# TEST = TESTS UNITAIRES
+# =====================
 test-backend:
   stage: test
   image: maven:3.9.3-eclipse-temurin-17
@@ -22,35 +38,40 @@ test-backend:
     - name: mysql:8.1
       alias: db
   variables:
+    MYSQL_ROOT_PASSWORD: pass
+    MYSQL_DATABASE: myshopdb
+    MYSQL_USER: testuser
+    MYSQL_PASSWORD: pass
     MYSQL_HOST: db
     MYSQL_PORT: 3306
   before_script:
     - apt-get update && apt-get install -y default-mysql-client
-    - echo " Waiting for MySQL..."
+    - echo "Waiting for MySQL..."
     - >
       until mysqladmin ping -h db -u$MYSQL_USER -p$MYSQL_PASSWORD --silent;
       do
-        echo "MySQL not ready yet...";
+        echo "MySQL not ready...";
         sleep 2;
       done
-    - echo "MySQL is ready ✔"
+    - echo "MySQL ready ✔"
   script:
-    - mvn -Dspring.profiles.active=test clean test
+    - mvn test
+  dependencies:
+    - build-backend
   artifacts:
-    when: always
     reports:
       junit:
         - target/surefire-reports/TEST-*.xml
-    paths:
-      - target/surefire-reports/
-    expire_in: 1 week
   only:
-    - merge_requests
     - main
     - develop
+    - merge_requests
 
-build-backend:
-  stage: build
+# =====================
+# DEPLOY = DOCKER
+# =====================
+deploy-backend:
+  stage: deploy
   image: docker:latest
   services:
     - docker:dind
@@ -59,18 +80,5 @@ build-backend:
   script:
     - docker build -t $IMAGE_TAG .
     - docker push $IMAGE_TAG
-  only:
-    - main
-    - develop
-  dependencies:
-    - test-backend
-
-deploy-backend:
-  stage: deploy
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache openssh-client
-  script:
-    - ssh user@votre-serveur "docker pull $IMAGE_TAG && docker stop backend || true && docker rm backend || true && docker run -d -p 8080:8080 --name backend $IMAGE_TAG"
   only:
     - main
