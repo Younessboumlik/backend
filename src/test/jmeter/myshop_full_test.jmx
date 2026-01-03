@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="MyShop No-Conflict Plan" enabled="true">
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="MyShop Performance Plan" enabled="true">
       <boolProp name="TestPlan.serialize_threadgroups">true</boolProp>
-      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="Variables" enabled="true">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
     </TestPlan>
@@ -11,22 +11,18 @@
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="10-User-Load-Test" enabled="true">
         <stringProp name="ThreadGroup.num_threads">10</stringProp>
         <stringProp name="ThreadGroup.ramp_time">30</stringProp>
-        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
-        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
-        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
-          <intProp name="LoopController.loops">-1</intProp>
-          <boolProp name="LoopController.continue_forever">false</boolProp>
-        </elementProp>
+        <intProp name="LoopController.loops">-1</intProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.duration">300</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
       </ThreadGroup>
       <hashTree>
         <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults" enabled="true">
-          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
-            <collectionProp name="Arguments.arguments"/>
-          </elementProp>
           <stringProp name="HTTPSampler.domain">localhost</stringProp>
           <stringProp name="HTTPSampler.port">8080</stringProp>
+          <stringProp name="HTTPSampler.protocol">http</stringProp>
         </ConfigTestElement>
         <hashTree/>
         <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
@@ -38,9 +34,8 @@
           </collectionProp>
         </HeaderManager>
         <hashTree/>
-
-        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
-          <stringProp name="ConstantTimer.delay">500</stringProp>
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Pacing Timer" enabled="true">
+          <stringProp name="ConstantTimer.delay">1000</stringProp>
         </ConstantTimer>
         <hashTree/>
 
@@ -50,12 +45,12 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <stringProp name="Argument.value">{&#xd;
-    &quot;fullName&quot;: &quot;User_${__threadNum}&quot;,&#xd;
-    &quot;email&quot;: &quot;user.${__time}.${__threadNum}@test.com&quot;,&#xd;
-    &quot;password&quot;: &quot;password123&quot;,&#xd;
-    &quot;role&quot;: &quot;CLIENT&quot;,&#xd;
-    &quot;address&quot;: &quot;Casablanca&quot;,&#xd;
-    &quot;phoneNumber&quot;: &quot;06${__Random(10000000,99999999)}&quot;&#xd;
+  &quot;fullName&quot;: &quot;User_${__threadNum}&quot;,&#xd;
+  &quot;email&quot;: &quot;user.${__UUID}@test.com&quot;,&#xd;
+  &quot;password&quot;: &quot;password123&quot;,&#xd;
+  &quot;role&quot;: &quot;CLIENT&quot;,&#xd;
+  &quot;address&quot;: &quot;Marrakech&quot;,&#xd;
+  &quot;phoneNumber&quot;: &quot;06${__Random(10000000,99999999)}&quot;&#xd;
 }</stringProp>
               </elementProp>
             </collectionProp>
@@ -66,7 +61,7 @@
         <hashTree>
           <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract User ID" enabled="true">
             <stringProp name="JSONPostProcessor.referenceNames">USER_ID</stringProp>
-            <stringProp name="JSONPostProcessor.jsonPathExprs">$.id</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.user_id</stringProp>
           </JSONPostProcessor>
           <hashTree/>
         </hashTree>
@@ -76,7 +71,7 @@
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
-                <stringProp name="Argument.value">{ &quot;name&quot;: &quot;Cat_${__time}_${__threadNum}&quot;, &quot;description&quot;: &quot;Test&quot; }</stringProp>
+                <stringProp name="Argument.value">{ &quot;name&quot;: &quot;Cat_${__UUID}&quot;, &quot;description&quot;: &quot;Performance Category&quot; }</stringProp>
               </elementProp>
             </collectionProp>
           </elementProp>
@@ -86,7 +81,7 @@
         <hashTree>
           <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract Cat ID" enabled="true">
             <stringProp name="JSONPostProcessor.referenceNames">CAT_ID</stringProp>
-            <stringProp name="JSONPostProcessor.jsonPathExprs">$.id</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.category_id</stringProp>
           </JSONPostProcessor>
           <hashTree/>
         </hashTree>
@@ -97,11 +92,10 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <stringProp name="Argument.value">{&#xd;
-    &quot;name&quot;: &quot;Product_${__time}_${__threadNum}&quot;,&#xd;
-    &quot;description&quot;: &quot;Unique Description&quot;,&#xd;
-    &quot;price&quot;: ${__Random(10,5000)},&#xd;
-    &quot;stockQuantity&quot;: 100,&#xd;
-    &quot;categoryId&quot;: ${CAT_ID}&#xd;
+  &quot;name&quot;: &quot;Prod_${__UUID}&quot;,&#xd;
+  &quot;price&quot;: 150.00,&#xd;
+  &quot;stockQuantity&quot;: 50,&#xd;
+  &quot;categoryId&quot;: ${CAT_ID}&#xd;
 }</stringProp>
               </elementProp>
             </collectionProp>
@@ -112,7 +106,7 @@
         <hashTree>
           <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract Product ID" enabled="true">
             <stringProp name="JSONPostProcessor.referenceNames">PROD_ID</stringProp>
-            <stringProp name="JSONPostProcessor.jsonPathExprs">$.id</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.product_id</stringProp>
           </JSONPostProcessor>
           <hashTree/>
         </hashTree>
@@ -122,7 +116,7 @@
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
-                <stringProp name="Argument.value">{ &quot;productId&quot;: ${PROD_ID}, &quot;quantity&quot;: 1 }</stringProp>
+                <stringProp name="Argument.value">{ &quot;productId&quot;: ${PROD_ID}, &quot;quantity&quot;: 2 }</stringProp>
               </elementProp>
             </collectionProp>
           </elementProp>
@@ -137,12 +131,9 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <stringProp name="Argument.value">{&#xd;
-    &quot;userId&quot;: ${USER_ID},&#xd;
-    &quot;shippingAddress&quot;: &quot;Rue ${__Random(1,999)} Casablanca&quot;,&#xd;
-    &quot;shippingName&quot;: &quot;User_${__threadNum}&quot;,&#xd;
-    &quot;shippingEmail&quot;: &quot;u.${__time}@test.com&quot;,&#xd;
-    &quot;shippingPhone&quot;: &quot;0600000000&quot;,&#xd;
-    &quot;paymentMethod&quot;: &quot;CASH_ON_DELIVERY&quot;&#xd;
+  &quot;userId&quot;: ${USER_ID},&#xd;
+  &quot;paymentMethod&quot;: &quot;CASH_ON_DELIVERY&quot;,&#xd;
+  &quot;shippingAddress&quot;: &quot;Secteur CI/CD GitLab&quot;&#xd;
 }</stringProp>
               </elementProp>
             </collectionProp>
@@ -150,9 +141,6 @@
           <stringProp name="HTTPSampler.path">/api/orders/checkout</stringProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
         </HTTPSamplerProxy>
-        <hashTree/>
-
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true"/>
         <hashTree/>
       </hashTree>
     </hashTree>
