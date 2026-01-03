@@ -23,5 +23,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                                  @Param("search") String search);
 
     boolean existsByCategoryId(Long categoryId);
+
 }
 
