@@ -1,6 +1,7 @@
 stages:
   - build
   - test
+  - load-testing
   - deploy
 
 variables:
@@ -74,6 +75,32 @@ test-backend:
     - develop
     - merge_requests
 
+load-test-job:
+  stage: load-testing
+  image: justb4/jmeter:latest
+  services:
+    - name: mysql:8.1
+      alias: db
+  dependencies:
+    - build-backend
+  script:
+    # Installation JRE pour lancer le backend
+    - apt-get update && apt-get install -y openjdk-17-jre
+    # Lancement du backend en tâche de fond
+    - java -jar target/*.jar --spring.profiles.active=test --spring.datasource.url=jdbc:mysql://db:3306/myshopdb &
+    - sleep 40
+    # Exécution du test de charge (Load Test)
+    - jmeter -n -t src/test/jmeter/myshop_full_test.jmx -l results.jtl
+    # Vérification du seuil acceptable (Taux d'erreur < 1% recommandé par le cours)
+    - |
+      if grep -q "false" results.jtl; then 
+        echo "ÉCHEC : Le seuil de performance ou de stabilité n'est pas respecté !"
+        exit 1
+      fi
+  artifacts:
+    when: always
+    paths:
+      - results.jtl
 # =====================
 # DEPLOY = DOCKER IMAGE
 # =====================
